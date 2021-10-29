@@ -3,19 +3,31 @@ import base64
 import numpy as np
 from skimage import draw as skid
 
+import component
 
-def concatenate_list_data(list):
-    result = ''
-    for item in list:
-        if item == list[-1]:
-            result += str(item)
-        else:
-            result += str(item) + ' , '
-    return result
+def make_body_content(data):
+    return component.app_content(data)
 
 
-def dropdown_options(label_names, task='OD'):
-    return [{"label": name, "value": name} for name in label_names if name.startswith(task)]
+# def concatenate_list_data(list):
+#     result = ''
+#     for item in list:
+#         if item == list[-1]:
+#             result += str(item)
+#         else:
+#             result += str(item) + ' , '
+#     return result
+
+
+def dropdown_options(plot_element, data=None):
+    if data is None:
+        return [{"label": "N/A", "value": "NA"}]
+
+    labels = data["label_names"].filter(lambda x: x.startswith(plot_element.task))
+    if len(labels) == 0:
+        return [{"label": "N/A", "value": "NA"}]
+    else:
+        return [{"label": label, "value": label} for label in labels]
 
 
 def parse_upload_data(data):
@@ -91,12 +103,9 @@ def parse_annotations(json_labels):
                     rect_y = ann['value']['y'] * 0.01 * orig_height
                     rect_area = rect_height * rect_width
 
-                    if label_item == 0:
-                        pars['BB_width'][label_name_tmp] = []
-                        pars['BB_height'][label_name_tmp] = []
-                        pars['BB_area'][label_name_tmp] = []
-                        pars['BB_x'][label_name_tmp] = []
-                        pars['BB_y'][label_name_tmp] = []
+                    for par_type in ["BB_width", "BB_height", "BB_area", "BB_area", "BB_x", "BB_y"]:
+                        if label_name_tmp not in pars[par_type]:
+                            pars[par_type][label_name_tmp] = list()
 
                     pars['BB_width'][label_name_tmp].append(rect_width)
                     pars['BB_height'][label_name_tmp].append(rect_height)
@@ -122,8 +131,8 @@ def parse_annotations(json_labels):
                     mask[rr, cc] = (colour)  # (colour, colour, colour)
 
                     seg_area_tmp = len(mask[mask == 1])
-                    if label_item == 0:
-                        pars['seg_area'][label_name_tmp] = []
+                    if label_name_tmp not in pars['seg_area']:
+                        pars['seg_area'][label_name_tmp] = list()
                     pars['seg_area'][label_name_tmp].append(seg_area_tmp)
 
     return pars
